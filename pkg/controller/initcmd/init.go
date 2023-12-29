@@ -4,15 +4,15 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"log/slog"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
 //go:embed init.jsonnet
 var cfgTemplate []byte
 
-func (c *Controller) Init(_ context.Context, _ *logrus.Entry) error {
+func (c *Controller) Init(_ context.Context, _ *slog.Logger) error {
 	paths := []string{
 		"lintnet.jsonnet",
 		".lintnet.jsonnet",

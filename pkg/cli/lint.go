@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -10,15 +12,14 @@ import (
 	"github.com/lintnet/lintnet/pkg/jsonnet"
 	"github.com/lintnet/lintnet/pkg/log"
 	"github.com/lintnet/lintnet/pkg/module"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"github.com/suzuki-shunsuke/logrus-error/logerr"
+	"github.com/suzuki-shunsuke/slog-error/slogerr"
 	"github.com/urfave/cli/v2"
 )
 
 type lintCommand struct {
-	logE    *logrus.Entry
 	version string
+	stderr io.Writer
 }
 
 func (lc *lintCommand) command() *cli.Command {
@@ -46,19 +47,25 @@ func (lc *lintCommand) command() *cli.Command {
 
 func (lc *lintCommand) action(c *cli.Context) error { //nolint:dupl
 	fs := afero.NewOsFs()
-	logE := lc.logE
-	log.SetLevel(c.String("log-level"), logE)
-	log.SetColor(c.String("log-color"), logE)
+	logger, err := log.New(&log.ParamNew{
+		Out:     os.Stderr,
+		Level:   c.String("log-level"),
+		Color:   c.Bool("log-color"),
+		Version: lc.version,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize a logger: %w", err)
+	}
 	rootDir := os.Getenv("LINTNET_ROOT_DIR")
 	if rootDir == "" {
 		dir, err := config.GetRootDir()
 		if err != nil {
-			logerr.WithError(logE, err).Warn("get the root directory")
+			slogerr.WithError(logger, err).Warn("get the root directory")
 		}
 		rootDir = dir
 	}
 	modInstaller := module.NewInstaller(fs, github.New(c.Context), http.DefaultClient)
-	importer := jsonnet.NewImporter(c.Context, logE, &module.ParamInstall{
+	importer := jsonnet.NewImporter(c.Context, logger, &module.ParamInstall{
 		BaseDir: rootDir,
 	}, &jsonnet.FileImporter{
 		JPaths: []string{rootDir},
@@ -67,7 +74,7 @@ func (lc *lintCommand) action(c *cli.Context) error { //nolint:dupl
 		Version: lc.version,
 	}
 	ctrl := lint.NewController(param, fs, os.Stdout, modInstaller, importer)
-	return ctrl.Lint(c.Context, logE, &lint.ParamLint{ //nolint:wrapcheck
+	return ctrl.Lint(c.Context, logger, &lint.ParamLint{ //nolint:wrapcheck
 		FilePaths:      c.Args().Slice(),
 		ErrorLevel:     c.String("error-level"),
 		ConfigFilePath: c.String("config"),

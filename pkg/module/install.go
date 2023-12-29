@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,9 +14,8 @@ import (
 	"github.com/google/go-github/v57/github"
 	"github.com/lintnet/lintnet/pkg/osfile"
 	"github.com/mholt/archiver/v3"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"github.com/suzuki-shunsuke/logrus-error/logerr"
+	"github.com/suzuki-shunsuke/slog-error/slogerr"
 )
 
 type ParamInstall struct {
@@ -44,7 +44,7 @@ func NewInstaller(fs afero.Fs, gh GitHub, httpClient HTTPClient) *Installer {
 	}
 }
 
-func (mi *Installer) Install(ctx context.Context, logE *logrus.Entry, param *ParamInstall, mod *Archive) error { //nolint:funlen,cyclop
+func (mi *Installer) Install(ctx context.Context, logger *slog.Logger, param *ParamInstall, mod *Archive) error { //nolint:funlen,cyclop
 	// Check if the module is already downloaded
 	dest := filepath.Join(param.BaseDir, filepath.FromSlash(mod.ID))
 	f, err := afero.DirExists(mi.fs, dest)
@@ -62,11 +62,12 @@ func (mi *Installer) Install(ctx context.Context, logE *logrus.Entry, param *Par
 		Ref: mod.Ref,
 	}, 5) //nolint:gomnd
 	if err != nil {
-		return fmt.Errorf("get an archive link by GitHub API: %w", logerr.WithFields(err, logrus.Fields{
-			"moduel_repo_owner": mod.RepoOwner,
-			"moduel_repo_name":  mod.RepoName,
-			"moduel_ref":        mod.Ref,
-		}))
+		return fmt.Errorf("get an archive link by GitHub API: %w",
+			slogerr.WithAttrs(err,
+				slog.String("moduel_repo_owner", mod.RepoOwner),
+				slog.String("moduel_repo_name", mod.RepoName),
+				slog.String("moduel_ref", mod.Ref),
+			))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
@@ -86,7 +87,7 @@ func (mi *Installer) Install(ctx context.Context, logE *logrus.Entry, param *Par
 	}
 	defer func() {
 		if err := mi.fs.RemoveAll(tempDir); err != nil {
-			logE.WithError(err).Warn("delete a temporal directory")
+			logger.Warn("delete a temporal directory", slog.String("error", err.Error()))
 		}
 	}()
 	tempDest := filepath.Join(tempDir, "module.tar.gz")
@@ -95,7 +96,7 @@ func (mi *Installer) Install(ctx context.Context, logE *logrus.Entry, param *Par
 		return fmt.Errorf("create a temporal file: %w", err)
 	}
 	defer tempFile.Close()
-	logE.Info("downloading a module")
+	logger.Info("downloading a module")
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
 		return fmt.Errorf("download a module on a temporal directory: %w", err)
 	}

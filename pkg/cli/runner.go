@@ -3,9 +3,9 @@ package cli
 import (
 	"context"
 	"io"
+	"log/slog"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -14,7 +14,7 @@ type Runner struct {
 	Stdout  io.Writer
 	Stderr  io.Writer
 	LDFlags *LDFlags
-	LogE    *logrus.Entry
+	Logger  *slog.Logger
 }
 
 type LDFlags struct {
@@ -40,9 +40,10 @@ func (r *Runner) Run(ctx context.Context, args ...string) error {
 				Usage:   "log level",
 				EnvVars: []string{"LINTNET_LOG_LEVEL"},
 			},
-			&cli.StringFlag{
+			&cli.BoolFlag{
 				Name:    "log-color",
-				Usage:   "Log color. One of 'auto' (default), 'always', 'never'",
+				Usage:   "Log color",
+				Value:   true,
 				EnvVars: []string{"LINTNET_LOG_COLOR"},
 			},
 			&cli.StringFlag{
@@ -56,15 +57,16 @@ func (r *Runner) Run(ctx context.Context, args ...string) error {
 		Commands: []*cli.Command{
 			(&versionCommand{}).command(),
 			(&lintCommand{
-				logE:    r.LogE,
 				version: r.LDFlags.Version,
+				stderr:  r.Stderr,
 			}).command(),
 			(&initCommand{
-				logE: r.LogE,
+				version: r.LDFlags.Version,
+				stderr:  r.Stderr,
 			}).command(),
 			(&testCommand{
-				logE:    r.LogE,
 				version: r.LDFlags.Version,
+				stderr:  r.Stderr,
 			}).command(),
 		},
 	}

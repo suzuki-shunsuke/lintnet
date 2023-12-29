@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"runtime"
 
 	"github.com/lintnet/lintnet/pkg/config"
@@ -14,9 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/suzuki-shunsuke/logrus-error/logerr"
+	"github.com/suzuki-shunsuke/slog-error/slogerr"
 )
 
-func (c *Controller) Output(logE *logrus.Entry, errLevel errlevel.Level, results map[string]*FileResult, outputters []Outputter, outputSuccess bool) error {
+func (c *Controller) Output(logger *slog.Logger, errLevel errlevel.Level, results map[string]*FileResult, outputters []Outputter, outputSuccess bool) error {
 	fes := c.formatResultToOutput(results)
 	failed, err := isFailed(fes.Errors, errLevel)
 	if err != nil {
@@ -27,7 +29,7 @@ func (c *Controller) Output(logE *logrus.Entry, errLevel errlevel.Level, results
 	}
 	for _, outputter := range outputters {
 		if err := outputter.Output(fes); err != nil {
-			logE.WithError(err).Error("output errors")
+			slogerr.WithError(logger, err).Error("output errors")
 		}
 	}
 	if failed {

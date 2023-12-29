@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -12,14 +13,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/lintnet/lintnet/pkg/config"
 	"github.com/lintnet/lintnet/pkg/jsonnet"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
 //go:embed test_diff.txt
 var testResultTemplateByte []byte
 
-func (c *Controller) Test(_ context.Context, logE *logrus.Entry, param *ParamLint) error { //nolint:funlen,cyclop,gocognit
+func (c *Controller) Test(_ context.Context, logger *slog.Logger, param *ParamLint) error { //nolint:funlen,cyclop,gocognit
 	rawCfg := &config.RawConfig{}
 	if err := c.findAndReadConfig(param.ConfigFilePath, rawCfg); err != nil {
 		return err
@@ -39,7 +39,7 @@ func (c *Controller) Test(_ context.Context, logE *logrus.Entry, param *ParamLin
 		return err
 	}
 
-	pairs := c.filterTargetsWithTest(logE, targets)
+	pairs := c.filterTargetsWithTest(logger, targets)
 	failedResults := make([]*FailedResult, 0, len(pairs))
 	for _, pair := range pairs {
 		testData := []*TestData{}
@@ -143,7 +143,7 @@ type FailedResult struct {
 	Error        string `json:"error,omitempty"`
 }
 
-func (c *Controller) filterTargetsWithTest(logE *logrus.Entry, targets []*Target) []*TestPair {
+func (c *Controller) filterTargetsWithTest(logger *slog.Logger, targets []*Target) []*TestPair {
 	pairs := []*TestPair{}
 	for _, target := range targets {
 		for _, lintFile := range target.LintFiles {
@@ -156,7 +156,7 @@ func (c *Controller) filterTargetsWithTest(logE *logrus.Entry, targets []*Target
 			testFilePath := filepath.Join(filepath.Dir(lintFile.Path), testFileName)
 			f, err := afero.Exists(c.fs, testFilePath)
 			if err != nil {
-				logE.WithError(err).Warn("check if a test file exists")
+				logger.Warn("check if a test file exists", slog.String("error", err.Error()))
 				continue
 			}
 			if !f {

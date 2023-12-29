@@ -3,11 +3,11 @@ package lint
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/lintnet/lintnet/pkg/config"
 	"github.com/lintnet/lintnet/pkg/errlevel"
 	"github.com/lintnet/lintnet/pkg/module"
-	"github.com/sirupsen/logrus"
 )
 
 type ParamLint struct {
@@ -27,7 +27,7 @@ type ParamLint struct {
 // 	}
 // }
 
-func (c *Controller) Lint(ctx context.Context, logE *logrus.Entry, param *ParamLint) error {
+func (c *Controller) Lint(ctx context.Context, logger *slog.Logger, param *ParamLint) error {
 	rawCfg := &config.RawConfig{}
 	if err := c.findAndReadConfig(param.ConfigFilePath, rawCfg); err != nil {
 		return err
@@ -47,7 +47,7 @@ func (c *Controller) Lint(ctx context.Context, logE *logrus.Entry, param *ParamL
 		return err
 	}
 
-	if err := c.installModules(ctx, logE, &module.ParamInstall{
+	if err := c.installModules(ctx, logger, &module.ParamInstall{
 		BaseDir: param.RootDir,
 	}, cfg.ModuleArchives); err != nil {
 		return err
@@ -59,7 +59,7 @@ func (c *Controller) Lint(ctx context.Context, logE *logrus.Entry, param *ParamL
 	}
 
 	if len(param.FilePaths) > 0 {
-		logE.Debug("filtering targets by given files")
+		logger.Debug("filtering targets by given files")
 		targets = filterTargets(targets, param.FilePaths)
 	}
 
@@ -67,8 +67,9 @@ func (c *Controller) Lint(ctx context.Context, logE *logrus.Entry, param *ParamL
 	if err != nil {
 		return err
 	}
+	logger.Debug("linted", slog.Any("results", results))
 
-	return c.Output(logE, errLevel, results, outputters, param.OutputSuccess)
+	return c.Output(logger, errLevel, results, outputters, param.OutputSuccess)
 }
 
 func (c *Controller) getOutputters(cfg *config.Config, outputIDs []string) ([]Outputter, error) {

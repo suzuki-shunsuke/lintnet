@@ -9,6 +9,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v57 v57.0.0
 	github.com/google/go-jsonnet v0.20.0
+	github.com/m-mizutani/clog v0.0.4
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/otiai10/copy v1.14.0
@@ -16,6 +17,7 @@ require (
 	github.com/spf13/afero v1.11.0
 	github.com/suzuki-shunsuke/go-jsonnet-native-functions v0.2.0
 	github.com/suzuki-shunsuke/logrus-error v0.1.4
+	github.com/suzuki-shunsuke/slog-error v0.0.0-20231229131807-306628cbaae4
 	github.com/tmccombs/hcl2json v0.6.0
 	github.com/urfave/cli/v2 v2.26.0
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
@@ -29,13 +31,17 @@ require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.17.0 // indirect
+	github.com/k0kubun/pp/v3 v3.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
+	github.com/m-mizutani/goerr v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
